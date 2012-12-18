@@ -1,5 +1,7 @@
 # dyps
 
+Project Home: [https://github.com/MalteJ/dyps/](https://github.com/MalteJ/dyps/)
+
 ## System requirements
 
 You should have git and/or hg installed.
@@ -14,16 +16,19 @@ ensures that every dependency is present in the right version, or - if no versio
 updates a dependency by pulling from the repository. If it is versioned, the new version number will be saved.
 
 ### dyps update-all
-The same like "dyps update" but for all dependencies.
+The same like `dyps update` but for all dependencies.
 
 ### dyps keep [dependency]
-Adds the dependency's version number to dyps.yaml. Now you can be sure you will always get the same changeset.
+Adds the dependency's version number to `dyps.yaml`. Now you can be sure you will always get the same changeset.
 
 ### dyps release [dependency]
-Releases the dependency's version pinning. At the next dyps run the LATEST version will be fetched.
+Releases the dependency's version pinning. At the next `dyps run` the LATEST version will be fetched.
 
 ### dyps import-hg-submodules [.hgsub file]
-Imports submodules from a given hgsub file and saves the configuration to your dyps.yaml file.
+Imports submodules from a given hgsub file and saves the configuration to your `dyps.yaml` file.
+
+## Installation
+    python setup.py install
 
 ## License
 Copyright 2012 Malte Janduda
@@ -32,7 +37,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+    [http://www.apache.org/licenses/LICENSE-2.0](http://www.apache.org/licenses/LICENSE-2.0)
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
