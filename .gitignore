@@ -1,10 +1,24 @@
 dyps.out
 example/dependencies/*
 
+# Packages
 build/*
 dist/*
 *egg-info/*
+*.egg
+eggs
+parts
+bin
+var
+sdist
+develop-eggs
+.installed.cfg
+lib
+lib64
 
-*.pyc
+*.py[cod]
 *.swp
 *~
+.mr.developer.cfg
+.project
+.pydevproject

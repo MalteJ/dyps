@@ -12,19 +12,19 @@ Further you need Python 2.x and the python-yaml library.
 ### dyps run 
 ensures that every dependency is present in the right version, or - if no version is defined - the latest version.
 
-### dyps update <dependency>
+### dyps update [dependency]
 updates a dependency by pulling from the repository. If it is versioned, the new version number will be saved.
 
 ### dyps update-all
 The same like `dyps update` but for all dependencies.
 
-### dyps keep <dependency>
+### dyps keep [dependency]
 Adds the dependency's version number to `dyps.yaml`. Now you can be sure you will always get the same changeset.
 
-### dyps release <dependency>
+### dyps release [dependency]
 Releases the dependency's version pinning. At the next `dyps run` the LATEST version will be fetched.
 
-### dyps import-hg-submodules <.hgsub file>
+### dyps import-hg-submodules [.hgsub file]
 Imports submodules from a given hgsub file and saves the configuration to your `dyps.yaml` file.
 
 ## Installation

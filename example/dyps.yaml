@@ -1,20 +1,20 @@
-- dep: apache
-  source: https://github.com/puppetlabs/puppetlabs-apache.git
-  type: git
 - dep: puppi
   source: https://github.com/tsc-nemeses/puppi.git
-  type: git
-- dep: stdlib
-  source: https://github.com/puppetlabs/puppetlabs-stdlib.git
   type: git
 - dep: apt
   source: https://github.com/puppetlabs/puppetlabs-apt.git
   type: git
-  version: 75b1e7886e3107f49e19d1db885d89e9f6f9dd62
+- dep: hiera
+  source: https://github.com/ripienaar/hiera-puppet.git
+  type: git
+  version: 5abdb9ec923f3b6696e9743728e631c5d380328d
+- dep: stdlib
+  source: https://github.com/puppetlabs/puppetlabs-stdlib.git
+  type: git
 - dep: mysql
   source: https://github.com/puppetlabs/puppetlabs-mysql.git
   type: git
   version: af4b8bff0ad59f21211be2a98d31588066c41e0c
-- dep: hiera
-  source: https://github.com/ripienaar/hiera-puppet.git
+- dep: apache
+  source: https://github.com/puppetlabs/puppetlabs-apache.git
   type: git
