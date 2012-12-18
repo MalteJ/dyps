@@ -1,0 +1,253 @@
+#!/usr/bin/env python
+
+#  Copyright 2012 Malte Janduda
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+
+import yaml
+import os
+import subprocess
+import sys
+import re
+
+
+dependenciesFolder = "dependencies"
+outputFile = "dyps.out"
+
+outstr = open(outputFile, "w")
+
+class Struct:
+  def __init__(self, **entries):
+    self.version = None
+    self.__dict__.update(entries)
+    assert self.type in ("git", "hg")
+
+  def __str__(self):
+    return str(self.__dict__)
+
+  def toDict(self):
+    return self.__dict__
+
+class GitError(Exception):
+  def __init__(self, value):
+    self.value = value
+
+  def __str__(self):
+    return repr(self.value)
+
+class HgError(Exception):
+  def __init__(self, value):
+    self.value = value
+
+  def __str__(self):
+    return repr(self.value)
+
+
+# CLONING
+
+def clone(dep, path):
+  print "cloning %s repository %s" % (dep.type, dep.dep)
+  if dep.type == "git":
+    gitClone(dep, path)
+  elif dep.type == "hg":
+    hgClone(dep, path)
+
+def gitClone(dep, path):
+  ret = subprocess.call(["git", "clone", dep.source, path], stdout=outstr)
+  if not ret == 0:
+    raise GitError("$s: could not clone %s to %s" % (ret, dep.source, path))
+
+def hgClone(dep, path):
+  ret = subprocess.call(["hg", "clone", dep.source, path], stdout=outstr)
+  if not ret == 0:
+    raise HgError("%s: could not clone %s to %s" % (ret, dep.source, path))
+
+
+# PULLING
+
+def pullLatest(dep, path):
+  if dep.type == "git":
+    gitPull(dep, path)
+  elif dep.type == "hg":
+    hgPullUpdate(dep, path)
+
+def gitPull(dep, path):
+  print "pulling %s repository %s" % (dep.type, dep.dep)
+  ret = subprocess.call(["git", "pull"], cwd = path, stdout=outstr)
+  if not ret == 0:
+    raise GitError("%s: could not pull from %s in %s" % (ret, dep.source, path))
+
+def hgPullUpdate(dep, path):
+  print "pulling and updating %s repository %s" % (dep.type, dep.dep)
+  ret = subprocess.call(["hg", "pull"], cwd = path, stdout=outstr)
+  if not ret == 0:
+    raise HgError("%s: could not pull from %s in %s" % (ret, dep.source, path))
+
+  ret = subprocess.call(["hg", "update"], cwd = path, stdout=outstr)
+  if not ret == 0:
+    raise HgError("%s: could not update %s" % (ret, dep.source, path))
+
+# VERSIONING
+
+def ensureVersion(dep, path):
+  print "Ensuring version %s for repo %s" % (dep.version, dep.dep)
+  if dep.type == "git":
+    gitEnsureVersion(dep, path)
+  elif dep.type == "hg":
+    hgEnsureVersion(dep, path)
+
+
+def getVersion(dep, path):
+  if dep.type == "git":
+    return gitGetVersion(dep, path)
+  elif dep.type == "hg":
+    return hgGetVersion(dep, path)
+
+def gitGetVersion(dep, path):
+  cmd = subprocess.Popen(["git", "rev-parse", "HEAD"], cwd=path, stdout=subprocess.PIPE)
+  cmd_out, cmd_err = cmd.communicate()
+  return re.sub("[^A-Za-z0-9]", "", cmd_out)
+
+def hgGetVersion(dep, path):
+  cmd = subprocess.Popen(["hg", "id", "-i"], cwd=path, stdout=subprocess.PIPE)
+  cmd_out, cmd_err = cmd.communicate()
+  return re.sub("[^A-Za-z0-9]", "", cmd_out)
+
+def gitEnsureVersion(dep, path):
+  ret = subprocess.call(["git", "fetch"], cwd = path, stdout=outstr)
+  if not ret == 0:
+    raise GitError("%s: could not fetch from %s in %s" % (ret, dep.source, path))
+
+  ret = subprocess.call(["git", "reset", "--hard", dep.version], cwd = path, stdout=outstr)
+  if not ret == 0:
+    raise HgError("%s: could not reset repo %s to version %s" % (ret, dep.dep, dep.version))
+
+def hgEnsureVersion(dep, path):
+  ret = subprocess.call(["hg", "pull"], cwd = path, stdout=outstr)
+  if not ret == 0:
+    raise HgError("%s: could not pull from %s in %s" % (ret, dep.source, path))
+
+  ret = subprocess.call(["hg", "update", dep.version], cwd = path, stdout=outstr)
+  if not ret == 0:
+    raise HgError("%s: could not update repo %s to version %s" % (ret, dep.dep, dep.version))
+
+def readYaml():
+  stream = open("dyps.yaml", 'r')
+  depsDict = yaml.load(stream)
+  
+  depList = []
+  
+  for depDict in depsDict:
+    dep = Struct(**depDict)
+    depList.append(dep)
+  
+  return depList
+
+def run(deps):
+  if not os.path.exists(dependenciesFolder):
+    os.makedirs(dependenciesFolder)
+  
+  for dep in deps:
+    depFolder = dependenciesFolder+"/"+dep.dep
+    if not os.path.exists(depFolder):
+      clone(dep, depFolder)
+    elif not dep.version:
+      pullLatest(dep, depFolder)
+    
+    if dep.version:
+      ensureVersion(dep, depFolder)
+
+def saveDeps(deps):
+  tmpDict = []
+  for dep in deps:
+    tmpDict.append(dep.toDict())
+
+  for item in tmpDict:
+    if item["version"] == None:
+      del item["version"]
+
+  yaml.dump(tmpDict, open("dyps.yaml",'w'), default_flow_style=False)
+
+def keepVersion(deps, depname):
+  for dep in deps:
+    if depname == dep.dep:
+      dep.version = getVersion(dep, dependenciesFolder+"/"+dep.dep)
+  
+  saveDeps(deps)
+
+def releaseVersion(deps, depname):
+  for dep in deps:
+    if depname == dep.dep:
+      dep.version = None
+
+  saveDeps(deps)
+
+
+def update(deps, depname):
+  for dep in deps:
+    if depname == dep.dep:
+      depFolder = dependenciesFolder+"/"+dep.dep
+      pullLatest(dep,depFolder)
+
+  saveDeps(deps)
+
+def updateAll(deps):
+  for dep in deps:
+    depFolder = dependenciesFolder+"/"+dep.dep
+    pullLatest(dep, depFolder)
+    if dep.version:
+      dep.version = getVersion(dep,depFolder)
+  
+  saveDeps(deps)
+
+
+def importHgSubmodules(path):
+  deps = []
+  f = open(path, 'r')
+  for line in f:
+    dep = dict()
+    parts = line.split()#((' ', '[', ']'))
+    dep["dep"] = parts[0]
+    if parts[2].startswith("[git]"):
+      dep["type"] = "git"
+      dep["source"] = parts[2].lstrip('[git]')
+    else:
+      dep["type"] = "hg"
+      dep["source"] = parts[2]
+    dep["version"] = None
+    deps.append(Struct(**dep))
+
+  saveDeps(deps)
+
+def main(argv):
+  if(len(argv) == 0):
+    print("no command provided")
+  elif(argv[0] == "import-hg-submodules"):
+    return importHgSubmodules(argv[1])
+  
+  deps = readYaml()
+  if(argv[0] == "run"):
+    run(deps)
+  elif(argv[0] == "update-all"):
+    updateAll(deps)
+  elif(argv[0] == "update"):
+    update(deps, argv[1])
+  elif(argv[0] == "keep"):
+    keepVersion(deps,argv[1])
+  elif(argv[0] == "release"):
+    releaseVersion(deps,argv[1])
+  else:
+    print("%s not a valid command" % argv[1])
+
+if __name__ == "__main__":
+  main(sys.argv[1:])

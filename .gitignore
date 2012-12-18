@@ -1,0 +1,10 @@
+dyps.out
+example/dependencies/*
+
+build/*
+dist/*
+*egg-info/*
+
+*.pyc
+*.swp
+*~
