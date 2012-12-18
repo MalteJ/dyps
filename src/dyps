@@ -87,7 +87,7 @@ class GitRepo(Dependency):
 
   def ensurePresent(self):
     if not os.path.exists(self.targetDir):
-      self.clone(self.targetDir)
+      self.clone()
       if self.version:
         self.ensureVersion()
     else:
